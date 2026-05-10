@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Admin Panel - Smart Notification System</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<div class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+        <h2>🎯 Admin Hub</h2>
+        <div class="sidebar-actions">
+            <button class="sidebar-toggle" onclick="toggleSidebar()"><i class="fas fa-chevron-left"></i></button>
+            <button class="sidebar-close" onclick="toggleSidebar()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    </div>
+
+    <nav class="sidebar-nav">
+        <a href="#dashboard" class="nav-item active" onclick="showSection('dashboard')">
+            <i class="fas fa-chart-line"></i><span>Dashboard</span>
+        </a>
+        <a href="#create-alert" class="nav-item" onclick="showSection('create-alert')">
+            <i class="fas fa-plus-circle"></i><span>Create Alert</span>
+        </a>
+        <a href="#manage-alerts" class="nav-item" onclick="showSection('manage-alerts')">
+            <i class="fas fa-list"></i><span>Manage Alerts</span>
+        </a>
+    </nav>
+
+    <div class="sidebar-footer">
+        <div class="user-info">
+            <i class="fas fa-user-circle"></i>
+            <div>
+                <p id="sidebar-username">Loading...</p>
+                <small>Administrator</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- TOP NAVBAR -->
+<div class="navbar">
+    <div class="navbar-content">
+        <div class="navbar-left">
+            <button class="menu-toggle" onclick="toggleSidebar()">
+                <i class="fas fa-bars"></i>
+            </button>
+            <h1>📢 Admin Control Panel</h1>
+        </div>
+        <div class="navbar-right">
+            <button id="themeToggle" type="button" class="theme-btn" onclick="toggleTheme()">☀️ Light</button>
+            <span id="username-display" class="username-badge"></span>
+            <button onclick="logout()" class="logout-btn">Logout</button>
+        </div>
+    </div>
+</div>
+
+<!-- MAIN CONTENT -->
+<div class="admin-container">
+
+    <!-- DASHBOARD SECTION -->
+    <div id="dashboard" class="admin-section active">
+        <div class="section-header">
+            <h2>📊 Dashboard</h2>
+            <p>System Overview</p>
+        </div>
+
+        <div class="dashboard-grid">
+            <div class="dashboard-card">
+                <div class="card-icon" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                    <i class="fas fa-bell"></i>
+                </div>
+                <h3>Active Alerts</h3>
+                <p class="card-number" id="active-alerts-count">0</p>
+            </div>
+
+            <div class="dashboard-card">
+                <div class="card-icon" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                    <i class="fas fa-exclamation-circle"></i>
+                </div>
+                <h3>Total Alerts</h3>
+                <p class="card-number" id="total-alerts-count">0</p>
+            </div>
+
+            <div class="dashboard-card">
+                <div class="card-icon" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                    <i class="fas fa-archive"></i>
+                </div>
+                <h3>Archived</h3>
+                <p class="card-number" id="archived-alerts-count">0</p>
+            </div>
+        </div>
+
+        <div class="recent-alerts">
+            <h3>📋 Recent Alerts</h3>
+            <div id="recent-alerts-list" class="alerts-table-container">
+                <p class="loading-text">Loading alerts...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- CREATE ALERT SECTION -->
+    <div id="create-alert" class="admin-section">
+        <div class="section-header">
+            <h2>✍️ Create New Alert</h2>
+            <p>Compose and send alerts to users</p>
+        </div>
+
+        <div class="form-container">
+            <div class="form-group">
+                <label for="topic">Select Topic:</label>
+                <select id="topic" class="form-control">
+                    <option value="">-- Select Topic --</option>
+                    <option value="school/announcements">📚 School Announcement</option>
+                    <option value="system/alerts">⚙️ System Alert</option>
+                    <option value="weather/alerts">🌦️ Weather Alerts</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="alert-type">Alert Type:</label>
+                <div class="alert-type-group">
+                    <label class="radio-label">
+                        <input type="radio" name="alert-type" value="announcement" checked>
+                        <span>📢 Announcement</span>
+                    </label>
+                    <label class="radio-label">
+                        <input type="radio" name="alert-type" value="warning">
+                        <span>⚠️ Warning</span>
+                    </label>
+                    <label class="radio-label">
+                        <input type="radio" name="alert-type" value="emergency">
+                        <span>🚨 Emergency</span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="message">Alert Message:</label>
+                <textarea
+                    id="message"
+                    class="form-control message-area"
+                    placeholder="Enter your alert message here..."
+                    rows="8"
+                ></textarea>
+                <small id="char-count">0 / 500 characters</small>
+            </div>
+
+            <div class="form-actions">
+                <button onclick="createAlert()" class="btn btn-primary">
+                    <i class="fas fa-paper-plane"></i> Send Alert
+                </button>
+                <button onclick="clearAlertForm()" class="btn btn-secondary">
+                    <i class="fas fa-redo"></i> Clear Form
+                </button>
+            </div>
+
+            <div id="adminMessage" class="message-box"></div>
+        </div>
+    </div>
+
+    <!-- MANAGE ALERTS SECTION -->
+    <div id="manage-alerts" class="admin-section">
+        <div class="section-header">
+            <h2>🔧 Manage Alerts</h2>
+            <p>View, edit, and delete your alerts</p>
+        </div>
+
+        <div class="filter-bar">
+            <button class="filter-btn active" onclick="filterAlerts('all', this)">All</button>
+            <button class="filter-btn" onclick="filterAlerts('active', this)">Active</button>
+            <button class="filter-btn" onclick="filterAlerts('archived', this)">Archived</button>
+        </div>
+
+        <div id="alerts-list" class="alerts-table-container">
+            <p class="loading-text">Loading alerts...</p>
+        </div>
+    </div>
+
+</div>
+
+<!-- OVERLAY FOR SIDEBAR -->
+<div class="sidebar-overlay" onclick="toggleSidebar()"></div>
+
+<script src="admin.js"></script>
+</body>
+</html>

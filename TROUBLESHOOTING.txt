@@ -1,0 +1,462 @@
+❓ TROUBLESHOOTING & FAQ
+=======================
+
+COMMON ISSUES & SOLUTIONS:
+===========================
+
+❌ ISSUE #1: "Page shows blank or 404 error"
+==============================================
+
+Symptoms:
+- White blank page
+- 404 Not Found
+- Server Error 500
+
+Solution:
+1. Check files are in correct location:
+   C:\xampp\htdocs\mqtt-alert-app\
+   
+2. Verify Apache is running:
+   - XAMPP Control Panel
+   - Apache should have "Started" status
+   
+3. Check file names (case sensitive on some systems):
+   - Should be: signup.html (not Signup.html)
+   
+4. Clear browser cache:
+   - Press Ctrl + Shift + Delete
+   - Select "Cached images and files"
+   - Click Clear
+   
+5. Try different URL:
+   - http://localhost/mqtt-alert-app/
+   - or http://127.0.0.1/mqtt-alert-app/
+   
+6. Check Apache logs:
+   - C:\xampp\apache\logs\error.log
+   - Look for PHP errors
+
+
+❌ ISSUE #2: "Connection refused to database"
+==============================================
+
+Symptoms:
+- "Connection failed" message
+- MySQL error when logging in
+- Can't create account
+
+Solution:
+1. Check MySQL is running:
+   - XAMPP Control Panel
+   - MySQL should show "Started"
+   
+2. Verify database exists:
+   - Go to http://localhost/phpmyadmin
+   - Should see mqtt_alert_db in left panel
+   - If not, create manually via phpMyAdmin
+   
+3. Check database credentials:
+   - Open: C:\xampp\htdocs\mqtt-alert-app\config\db.php
+   - Verify:
+     - DB_HOST = 'localhost'
+     - DB_USER = 'root'
+     - DB_PASS = '' (empty)
+     - DB_NAME = 'mqtt_alert_db'
+   
+4. Check MySQL port:
+   - netstat -ano | findstr ":3306"
+   - Should show port listening
+   
+5. Restart MySQL:
+   - XAMPP → Stop MySQL
+   - Wait 5 seconds
+   - XAMPP → Start MySQL
+   
+6. Check file permissions:
+   - db.php should have read permissions
+   - Windows: Right-click → Properties → Security
+
+
+❌ ISSUE #3: "Cannot connect to MQTT / No notifications"
+=========================================================
+
+Symptoms:
+- Dashboard loads but no notifications
+- "Connection failed" in console
+- Toast notifications don't appear
+
+Solution:
+1. Check Mosquitto is running:
+   - Look for terminal window with "Opening websockets listen socket on port 9001"
+   - If not found, start Mosquitto:
+     - cmd → cd "C:\Program Files\mosquitto"
+     - mosquitto -v
+   
+2. Verify WebSocket configuration:
+   - Check: C:\Program Files\mosquitto\mosquitto.conf
+   - Should contain:
+     listener 9001
+     protocol websockets
+   
+3. Check firewall:
+   - Windows Defender Firewall
+   - Add exception for port 9001
+   - Or disable temporarily for testing
+   
+4. Check browser console:
+   - Press F12 in browser
+   - Look for error messages in Console tab
+   - Common error: "ws://localhost:9001 connection refused"
+   
+5. Check ports:
+   - netstat -ano | findstr ":9001"
+   - Should show port listening
+   
+6. Try using IP instead of localhost:
+   - Edit app.js and admin.js
+   - Change: const client = mqtt.connect("ws://localhost:9001");
+   - To: const client = mqtt.connect("ws://127.0.0.1:9001");
+   
+7. Restart Mosquitto:
+   - Close terminal (Ctrl+C)
+   - Wait 5 seconds
+   - Run: mosquitto -v again
+
+
+❌ ISSUE #4: "Login not working"
+=================================
+
+Symptoms:
+- Can't create account
+- Can't login
+- Registration fails
+
+Solution:
+1. Check browser console:
+   - F12 → Console tab
+   - Look for specific error message
+   
+2. Verify backend files exist:
+   - Check: C:\xampp\htdocs\mqtt-alert-app\backend\
+   - Should have: register.php, login.php
+   
+3. Check username/email requirements:
+   - Username: min 3 characters
+   - Email: must be valid format
+   - Password: min 6 characters
+   
+4. Check if account already exists:
+   - Try different username/email
+   
+5. Verify MySQL is running and accessible:
+   - http://localhost/phpmyadmin
+   - Should connect without error
+   
+6. Check PHP errors:
+   - View page source (Ctrl+U)
+   - Check for error messages
+   - Check C:\xampp\apache\logs\error.log
+   
+7. Clear browser local storage:
+   - F12 → Storage/Application tab
+   - Delete all localStorage entries
+   - Try login again
+
+
+❌ ISSUE #5: "Notifications not showing badges"
+=======================================================
+
+Symptoms:
+- Notifications appear but styling is wrong
+- Badges look broken
+- Layout is messed up
+
+Solution:
+1. Verify style.css exists:
+   - Check: C:\xampp\htdocs\mqtt-alert-app\style.css
+   - File size should be > 10KB
+   
+2. Force browser to reload styles:
+   - Press Ctrl + Shift + R (hard refresh)
+   - Or Ctrl + F5
+   
+3. Check browser developer tools:
+   - F12 → Inspector/Elements
+   - Look at CSS applied
+   - Check for 404 errors on style.css
+   
+4. Verify CSS file is being loaded:
+   - Check HTML head section
+   - Should have: <link rel="stylesheet" href="style.css">
+   
+5. Try different browser:
+   - Chrome, Firefox, Edge
+   - Test if issue persists
+   
+6. Clear cache completely:
+   - Ctrl + Shift + Delete
+   - Clear ALL data
+   - Restart browser
+
+
+❌ ISSUE #6: "JavaScript errors in console"
+============================================
+
+Symptoms:
+- F12 console shows errors
+- Features not working
+- Red X in console
+
+Common errors & solutions:
+
+Error: "mqtt is not defined"
+Solution: Check MQTT library is loading
+- In HTML: <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+- Network tab in F12: Should show mqtt.min.js downloading
+
+Error: "Cannot read property of null"
+Solution: Element not found in HTML
+- Check HTML has required elements
+- Example: <div id="notifications"></div>
+- Check spelling matches JavaScript
+
+Error: "localStorage is undefined"
+Solution: Browser doesn't support localStorage
+- Use different browser
+- Clear browser data
+- Try incognito mode
+
+Error: "CORS error"
+Solution: Cross-Origin request blocked
+- Check backend files are local (not external URL)
+- Verify CORS headers in backend (usually not needed for localhost)
+
+
+❌ ISSUE #7: "Sender doesn't see notifications being sent"
+===========================================================
+
+Symptoms:
+- Send alert says "success"
+- But admin doesn't see it on dashboard
+- Message was sent but not received
+
+Solution:
+1. Check you're logged in:
+   - Go to dashboard.html
+   - Should show username in top right
+   - If not logged in, login first
+   
+2. Verify subscription:
+   - Check browser console (F12)
+   - Should show "Connected to MQTT Broker"
+   
+3. Check topic matches:
+   - Admin sends to: "school/announcements"
+   - Dashboard subscribes to: "school/announcements"
+   - Must match exactly
+   
+4. Check filter isn't hiding it:
+   - Click "All" filter button
+   - Badge should appear
+   
+5. Check browser time sync:
+   - System clock might be wrong
+   - Sync time with internet
+   
+6. Try different message:
+   - Send a simple test message
+   - Check if any notification works
+
+
+❌ ISSUE #8: "XAMPP Port 80 already in use"
+============================================
+
+Symptoms:
+- Apache won't start
+- Error: "Apache shutdown unexpectedly"
+- "Port 80 already in use"
+
+Solution:
+1. Check what's using port 80:
+   netstat -ano | findstr ":80"
+
+2. Find the process:
+   - Get PID from above
+   - tasklist | findstr [PID]
+   
+3. Stop the process:
+   - taskkill /PID [PID] /F
+   
+4. Try Apache again
+
+Common applications that use port 80:
+- Skype
+- IIS (Internet Information Services)
+- Other Apache instances
+- Some VPN software
+
+Alternative: Use different port
+1. Edit: C:\xampp\apache\conf\httpd.conf
+2. Find: "Listen 80"
+3. Change to: "Listen 8080"
+4. Access at: http://localhost:8080/
+
+
+❌ ISSUE #9: "Mosquitto gives unknown command error"
+====================================================
+
+Symptoms:
+- Error: "'mosquitto' is not recognized"
+- or: "mosquitto: command not found"
+
+Solution:
+1. Use full path to mosquitto:
+   "C:\Program Files\mosquitto\mosquitto.exe" -v
+   
+2. Or navigate first:
+   cd "C:\Program Files\mosquitto"
+   .\mosquitto.exe -v
+   
+3. Or use just the extension:
+   cd "C:\Program Files\mosquitto"
+   mosquitto.exe -v
+
+
+❌ ISSUE #10: "Logout doesn't work"
+====================================
+
+Symptoms:
+- Clicking logout doesn't logout
+- Still logged in after logout
+- Redirects but can access protected pages
+
+Solution:
+1. Check logout button onclick:
+   - Should call: onclick="logout()"
+   
+2. Verify logout() function:
+   - Check app.js has logout function
+   - Should clear localStorage
+   
+3. Check localStorage is working:
+   - F12 → Storage → Local Storage
+   - Should have user_id and username
+   - After logout, should be empty
+   
+4. Clear manually:
+   - F12 → Storage → Local Storage
+   - Right-click → Delete All
+   - Refresh page
+   
+5. Check redirect:
+   - window.location.href = 'login.html'
+   - Should redirect to login
+
+
+FEATURE-SPECIFIC TROUBLESHOOTING:
+==================================
+
+❓ Why don't I see a delete button on badges?
+Answer: Check browser window width - on mobile they might be hidden. Click the X button in top-right of badge.
+
+❓ Why is my notification sound not playing?
+Answer: 
+1. Check browser volume
+2. Browser might mute audio by default - check speaker icon
+3. Some browsers block audio until user interaction
+4. Try clicking on page first, then send alert
+
+❓ Why are filter buttons not working?
+Answer:
+1. Check HTML has filter buttons
+2. Check onclick="filterTopic('topic')" matches topics
+3. Verify app.js has filterTopic() function
+
+❓ Why is the database getting too big?
+Answer:
+1. Notifications table growing
+2. Run cleanup query:
+   DELETE FROM notifications WHERE created_at < DATE_SUB(NOW(), INTERVAL 30 DAY);
+3. Archive old data regularly
+
+❓ Can multiple users login at same time?
+Answer: Yes! Each browser session is separate. They all receive notifications in real-time.
+
+❓ What if I forgot admin password?
+Answer: 
+1. Go to http://localhost/phpmyadmin
+2. Find user in users table
+3. Click Edit
+4. Set password to new hash (use MySQL PASSWORD function)
+5. Or delete user and recreate account
+
+
+PERFORMANCE OPTIMIZATION TIPS:
+==============================
+
+If system is slow:
+
+1. Database optimization:
+   - Archive old notifications
+   - Add indexes to tables
+   - Run OPTIMIZE TABLE
+
+2. PHP optimization:
+   - Increase memory_limit in php.ini
+   - Enable OpCache
+
+3. MQTT optimization:
+   - Reduce message size
+   - Don't send attachments
+   - Use compression if possible
+
+4. Browser optimization:
+   - Clear cache regularly
+   - Use latest browser version
+   - Close other tabs/programs
+
+
+ADVANCED TROUBLESHOOTING:
+=========================
+
+Enable verbose logging:
+
+PHP: Add to db.php
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
+Check MySQL logs:
+- Windows: C:\xampp\mysql\data\mysql_error.log
+
+Check Apache logs:
+- Windows: C:\xampp\apache\logs\error.log
+
+Monitor with netstat:
+- netstat -ano
+- See all connections and ports
+
+Test MQTT manually:
+- Download MQTT client tool
+- Connect to localhost:1883
+- Subscribe to topics
+- Test publishing messages
+
+
+GETTING HELP:
+=============
+
+If still stuck, check:
+1. All three services running (Apache, MySQL, Mosquitto)
+2. Files in correct folder: C:\xampp\htdocs\mqtt-alert-app\
+3. Browser console (F12) for error messages
+4. Service logs for detailed errors
+5. Windows Event Viewer for system errors
+
+Common successful fix: Restart everything
+1. Close all terminals
+2. Stop all XAMPP services
+3. Wait 10 seconds
+4. Start Apache
+5. Start MySQL
+6. Start Mosquitto
+7. Refresh browser

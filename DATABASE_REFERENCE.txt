@@ -1,0 +1,216 @@
+🗄️ SMART NOTIFICATION SYSTEM - DATABASE REFERENCE
+==================================================
+
+DATABASE NAME: mqtt_alert_db
+
+TABLES:
+=======
+
+TABLE 1: users
+--------------
+Fields:
+- id (INT, PRIMARY KEY, AUTO_INCREMENT)
+- username (VARCHAR(50), UNIQUE, NOT NULL)
+- email (VARCHAR(100), UNIQUE, NOT NULL)  
+- password (VARCHAR(255), NOT NULL) - Hashed with PASSWORD_DEFAULT
+- created_at (TIMESTAMP, DEFAULT CURRENT_TIMESTAMP)
+
+Example Insert:
+INSERT INTO users (username, email, password) 
+VALUES ('john_doe', 'john@example.com', '$2y$10$...');
+
+Query Users:
+SELECT * FROM users;
+
+
+TABLE 2: notifications
+---------------------
+Fields:
+- id (INT, PRIMARY KEY, AUTO_INCREMENT)
+- user_id (INT, NOT NULL, FOREIGN KEY references users(id))
+- topic (VARCHAR(100), NOT NULL)
+- message (TEXT, NOT NULL)
+- is_read (BOOLEAN, DEFAULT FALSE)
+- created_at (TIMESTAMP, DEFAULT CURRENT_TIMESTAMP)
+
+Example Insert:
+INSERT INTO notifications (user_id, topic, message, is_read)
+VALUES (1, 'school/announcements', 'Class cancelled tomorrow', FALSE);
+
+Query Notifications:
+SELECT * FROM notifications WHERE user_id = 1;
+SELECT * FROM notifications WHERE is_read = FALSE;
+
+
+TABLE 3: sessions
+-----------------
+Fields:
+- id (INT, PRIMARY KEY, AUTO_INCREMENT)
+- user_id (INT, NOT NULL, FOREIGN KEY references users(id))
+- session_token (VARCHAR(255), UNIQUE, NOT NULL)
+- expires_at (TIMESTAMP)
+- created_at (TIMESTAMP, DEFAULT CURRENT_TIMESTAMP)
+
+For future enhancement of persistent sessions.
+
+
+MQTT TOPICS SCHEMA:
+===================
+
+TOPIC 1: school/announcements
+Format: Any string message
+Emoji: 🎓
+Used By: School staff to announce events
+Subscribers: All logged-in users
+
+TOPIC 2: system/alerts
+Format: System status messages
+Emoji: ⚙️
+Used By: System administrators
+Subscribers: All logged-in users
+
+TOPIC 3: weather/alerts
+Format: Weather updates and warnings
+Emoji: 🌤️
+Used By: Weather service integrations
+Subscribers: All logged-in users
+
+Custom Topics:
+Add any topic following format: category/subcategory
+
+
+USEFUL QUERIES:
+===============
+
+1. Get all users:
+   SELECT * FROM users;
+
+2. Count total notifications:
+   SELECT COUNT(*) as total FROM notifications;
+
+3. Get unread notifications for user:
+   SELECT * FROM notifications WHERE user_id = 1 AND is_read = FALSE;
+
+4. Get notifications by topic:
+   SELECT * FROM notifications WHERE topic = 'school/announcements';
+
+5. Mark all as read:
+   UPDATE notifications SET is_read = TRUE WHERE user_id = 1;
+
+6. Delete old notifications (older than 30 days):
+   DELETE FROM notifications WHERE created_at < DATE_SUB(NOW(), INTERVAL 30 DAY);
+
+7. Get most active notifications:
+   SELECT topic, COUNT(*) as count FROM notifications GROUP BY topic ORDER BY count DESC;
+
+8. Find user by username:
+   SELECT * FROM users WHERE username = 'john_doe';
+
+9. Delete user and cascade notifications:
+   DELETE FROM users WHERE id = 1;
+
+10. Get notifications timeline:
+    SELECT created_at, COUNT(*) as count FROM notifications GROUP BY DATE(created_at);
+
+
+DEFAULT CREDENTIALS:
+====================
+
+MYSQL:
+- Username: root
+- Password: (empty)
+- Host: localhost
+- Port: 3306
+- Database: mqtt_alert_db
+
+MOSQUITTO:
+- Host: localhost
+- MQTT Port: 1883
+- WebSocket Port: 9001
+- Authentication: None (anonymous)
+
+
+BACKUP QUERIES:
+===============
+
+Export users:
+SELECT * FROM users INTO OUTFILE '/tmp/users_backup.csv';
+
+Export notifications:
+SELECT * INTO OUTFILE '/tmp/notifications_backup.csv' FROM notifications;
+
+Export all databases:
+mysqldump -u root -p mqtt_alert_db > backup.sql
+
+Restore database:
+mysql -u root -p mqtt_alert_db < backup.sql
+
+
+MONITORING:
+===========
+
+Check database size:
+SELECT SUM(data_length + index_length) / 1024 / 1024 as 'DB Size in MB' 
+FROM information_schema.TABLES 
+WHERE table_schema = 'mqtt_alert_db';
+
+Check table size:
+SELECT table_name, ROUND(((data_length + index_length) / 1024 / 1024), 2) as 'Size in MB'
+FROM information_schema.TABLES
+WHERE table_schema = 'mqtt_alert_db'
+ORDER BY (data_length + index_length) DESC;
+
+Check active connections:
+SHOW PROCESSLIST;
+
+Check database stats:
+SELECT table_name, table_rows FROM information_schema.tables 
+WHERE table_schema = 'mqtt_alert_db';
+
+
+MAINTENANCE:
+============
+
+Optimize tables:
+OPTIMIZE TABLE users;
+OPTIMIZE TABLE notifications;
+OPTIMIZE TABLE sessions;
+
+Repair corrupted table:
+REPAIR TABLE notifications;
+
+Check table integrity:
+CHECK TABLE notifications;
+
+Flush privileges (after permission changes):
+FLUSH PRIVILEGES;
+
+
+PERFORMANCE TIPS:
+=================
+
+1. Add indexes on frequently queried columns:
+   CREATE INDEX idx_user_id ON notifications(user_id);
+   CREATE INDEX idx_topic ON notifications(topic);
+   CREATE INDEX idx_created ON notifications(created_at);
+
+2. Archive old data regularly to keep notifications table small
+
+3. Use pagination in app to load notifications
+
+4. Consider message queue for high-volume scenarios
+
+5. Monitor notification table growth with automated cleanup
+
+
+ACCESS CONTROL:
+===============
+
+Create readonly user for app:
+CREATE USER 'notification_app'@'localhost' IDENTIFIED BY 'secure_password';
+GRANT SELECT, INSERT, UPDATE ON mqtt_alert_db.* TO 'notification_app'@'localhost';
+FLUSH PRIVILEGES;
+
+Then update db.php:
+define('DB_USER', 'notification_app');
+define('DB_PASS', 'secure_password');

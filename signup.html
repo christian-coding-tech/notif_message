@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Sign Up - Smart Notification System</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="auth-body">
+
+<div class="auth-container">
+    <div class="auth-box">
+        <h1>🔔 Smart Notifications</h1>
+        <h2>Create Account</h2>
+        
+        <form id="signupForm">
+            <input 
+                type="text" 
+                id="username" 
+                placeholder="Username" 
+                required
+            >
+            <input 
+                type="email" 
+                id="email" 
+                placeholder="Email" 
+                required
+            >
+            <input 
+                type="password" 
+                id="password" 
+                placeholder="Password (min 6 chars)" 
+                required
+            >
+            <input 
+                type="password" 
+                id="confirm_password" 
+                placeholder="Confirm Password" 
+                required
+            >
+            <button type="submit" class="auth-btn">Sign Up</button>
+        </form>
+        
+        <div id="signupMessage" class="message"></div>
+        
+        <p class="auth-link">
+            Already have an account? 
+            <a href="login.html">Login here</a>
+        </p>
+    </div>
+</div>
+
+<script>
+document.getElementById('signupForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const username = document.getElementById('username').value;
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
+    const confirm_password = document.getElementById('confirm_password').value;
+    const messageDiv = document.getElementById('signupMessage');
+    
+    try {
+        const response = await fetch('backend/register.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ username, email, password, confirm_password })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            messageDiv.textContent = '✓ Account created! Redirecting to login...';
+            messageDiv.classList.add('success');
+            setTimeout(() => {
+                window.location.href = 'login.html';
+            }, 2000);
+        } else {
+            messageDiv.textContent = '✗ ' + data.message;
+            messageDiv.classList.add('error');
+        }
+    } catch (error) {
+        messageDiv.textContent = '✗ Connection error';
+        messageDiv.classList.add('error');
+    }
+});
+</script>
+
+</body>
+</html>

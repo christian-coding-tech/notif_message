@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Dashboard - Smart Notification System</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+</head>
+<body>
+
+<div class="sidebar" id="userSidebar">
+    <div class="sidebar-header">
+        <h2>🔔 Your Panel</h2>
+        <div class="sidebar-actions">
+            <button class="sidebar-toggle" onclick="toggleSidebar()"><i class="fas fa-chevron-left"></i></button>
+            <button class="sidebar-close" onclick="toggleSidebar()"><i class="fas fa-times"></i></button>
+        </div>
+    </div>
+
+    <nav class="sidebar-nav">
+        <a class="nav-item sidebar-item active" href="#" onclick="filterTopic('all', this); return false;">
+            <i class="fas fa-th-large"></i><span>All Notifications</span>
+        </a>
+        <a class="nav-item sidebar-item" href="#" onclick="filterTopic('school/announcements', this); return false;">
+            <i class="fas fa-school"></i><span>School</span>
+        </a>
+        <a class="nav-item sidebar-item" href="#" onclick="filterTopic('system/alerts', this); return false;">
+            <i class="fas fa-tools"></i><span>System</span>
+        </a>
+        <a class="nav-item sidebar-item" href="#" onclick="filterTopic('weather/alerts', this); return false;">
+            <i class="fas fa-cloud-sun"></i><span>Weather</span>
+        </a>
+        <a class="nav-item sidebar-item" href="#" onclick="toggleSettings(); return false;">
+            <i class="fas fa-cog"></i><span>Account Settings</span>
+        </a>
+    </nav>
+
+    <div class="sidebar-footer">
+        <div class="user-info">
+            <i class="fas fa-user-circle"></i>
+            <div>
+                <p id="sidebar-username">Loading...</p>
+                <small>User Dashboard</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="sidebar-overlay" onclick="toggleSidebar()"></div>
+
+<div class="navbar">
+    <div class="navbar-content">
+            <div class="navbar-left">
+                <button class="menu-toggle" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
+                <h1>🔔 Smart Notifications</h1>
+            </div>
+            <div class="navbar-right">
+                <button id="settingsButton" type="button" class="btn btn-secondary" onclick="toggleSettings()">Settings</button>
+                <button id="themeToggle" type="button" class="theme-btn" onclick="toggleTheme()">☀️ Light</button>
+                <img id="profileAvatar" class="profile-avatar" src="" alt="Avatar">
+                <span id="username-display" class="username-badge"></span>
+                <button onclick="logout()" class="logout-btn">Logout</button>
+        </div>
+    </div>
+</div>
+
+<div id="profile-settings-overlay" class="modal-overlay hidden" onclick="closeSettings(event)"></div>
+<div id="profile-settings" class="profile-settings modal hidden">
+    <div class="modal-header">
+        <h2>⚙️ Account Settings</h2>
+        <button class="modal-close" onclick="closeSettings()">&times;</button>
+    </div>
+    <div class="form-container">
+        <form id="profileForm">
+            <div class="form-group">
+                <label for="avatar">Profile Image</label>
+                <div class="avatar-upload">
+                    <img id="profilePreview" class="avatar-preview" src="" alt="Profile Preview">
+                    <div class="avatar-input-wrapper">
+                        <input type="file" id="avatar" name="avatar" accept="image/png, image/jpeg, image/jpg, image/gif" class="form-control">
+                        <small>PNG, JPG, GIF (Max 2MB)</small>
+                    </div>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input type="text" id="username" name="username" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label for="email">Email</label>
+                <input type="email" id="email" name="email" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label for="password">Password <small>(leave blank to keep current password)</small></label>
+                <input type="password" id="password" name="password" class="form-control" placeholder="Enter a new password">
+            </div>
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">Save Changes</button>
+                <button type="button" class="btn btn-secondary" onclick="closeSettings()">Cancel</button>
+            </div>
+            <div id="profileMessage" class="message-box"></div>
+        </form>
+    </div>
+</div>
+
+<div class="dashboard-container">
+    <div class="container">
+        <div class="dashboard-header">
+            <h2>Your Notifications</h2>
+            <div class="filter-buttons">
+                <button onclick="filterTopic('all', this)" class="filter-btn active">All</button>
+                <button onclick="filterTopic('school/announcements', this)" class="filter-btn">School</button>
+                <button onclick="filterTopic('system/alerts', this)" class="filter-btn">System</button>
+                <button onclick="filterTopic('weather/alerts', this)" class="filter-btn">Weather</button>
+            </div>
+        </div>
+
+        <div class="notification-badges" id="notifications"></div>
+
+        <div id="empty-state" class="empty-state">
+            <p>No notifications yet. Stay tuned!</p>
+        </div>
+    </div>
+</div>
+
+<script src="app.js"></script>
+
+</body>
+</html>

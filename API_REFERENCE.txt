@@ -1,0 +1,619 @@
+📡 API & FUNCTIONS REFERENCE
+============================
+
+BACKEND API ENDPOINTS:
+======================
+
+1. REGISTER NEW USER
+-------------------
+Endpoint: POST /backend/register.php
+Content-Type: application/json
+
+Request:
+{
+  "username": "john_doe",
+  "email": "john@example.com",
+  "password": "password123",
+  "confirm_password": "password123"
+}
+
+Response Success:
+{
+  "success": true,
+  "message": "Registration successful"
+}
+
+Response Error:
+{
+  "success": false,
+  "message": "Username or email already exists"
+}
+
+Validations:
+- Username: min 3 characters, alphanumeric
+- Email: valid email format
+- Password: min 6 characters
+- Confirm: must match password
+
+Error Messages:
+- "Username must be at least 3 characters"
+- "Invalid email format"
+- "Password must be at least 6 characters"
+- "Passwords do not match"
+- "Username or email already exists"
+
+
+2. USER LOGIN
+-------------
+Endpoint: POST /backend/login.php
+Content-Type: application/json
+
+Request:
+{
+  "username": "john_doe",
+  "password": "password123"
+}
+
+Response Success:
+{
+  "success": true,
+  "message": "Login successful",
+  "user_id": 1,
+  "username": "john_doe"
+}
+
+Response Error:
+{
+  "success": false,
+  "message": "Invalid username or password"
+}
+
+Side Effects:
+- Sets PHP $_SESSION['user_id']
+- Sets PHP $_SESSION['username']
+- JavaScript stores in localStorage
+
+
+3. USER LOGOUT
+--------------
+Endpoint: POST /backend/logout.php
+Content-Type: application/json
+
+Request: (no body needed)
+
+Response:
+{
+  "success": true,
+  "message": "Logged out successfully"
+}
+
+Side Effects:
+- Destroys PHP session
+- Clears localStorage (done by JavaScript)
+- Disconnects MQTT client
+
+
+4. CHECK SESSION
+----------------
+Endpoint: GET /backend/check_session.php
+Content-Type: application/json
+
+Response if logged in:
+{
+  "logged_in": true,
+  "user_id": 1,
+  "username": "john_doe"
+}
+
+Response if not logged in:
+{
+  "logged_in": false
+}
+
+Used By: Future session verification
+
+
+MQTT PROTOCOL:
+==============
+
+Connection Details:
+- Protocol: WebSocket
+- URL: ws://localhost:9001
+- Authentication: None (anonymous)
+- Auto-reconnect: Enabled
+
+JavaScript Client:
+const client = mqtt.connect("ws://localhost:9001");
+
+Connection Events:
+client.on("connect", () => {
+  console.log("Connected to MQTT");
+});
+
+client.on("disconnect", () => {
+  console.log("Disconnected from MQTT");
+});
+
+client.on("error", (err) => {
+  console.error("MQTT Error:", err);
+});
+
+
+MQTT PUBLISH:
+=============
+
+Send message to topic:
+client.publish("school/announcements", "Class cancelled tomorrow");
+
+With callback:
+client.publish("topic", "message", (err) => {
+  if (err) console.error("Failed to publish");
+  else console.log("Message published");
+});
+
+QoS levels (Quality of Service):
+- 0: Fire and forget (default)
+- 1: At least once
+- 2: Exactly once
+
+Example with QoS:
+client.publish("topic", "message", {qos: 1});
+
+
+MQTT SUBSCRIBE:
+===============
+
+Subscribe to topic:
+client.subscribe("school/announcements");
+
+Receive messages:
+client.on("message", (topic, message) => {
+  console.log(`Topic: ${topic}`);
+  console.log(`Message: ${message.toString()}`);
+});
+
+Subscribe to multiple topics:
+client.subscribe([
+  "school/announcements",
+  "system/alerts",
+  "weather/alerts"
+]);
+
+Unsubscribe:
+client.unsubscribe("school/announcements");
+
+
+MQTT TOPICS AVAILABLE:
+======================
+
+1. school/announcements
+   - Description: School events and announcements
+   - Emoji: 🎓
+   - Subscribers: All users
+   - Message Type: Text (any content)
+
+2. system/alerts
+   - Description: System status and alerts
+   - Emoji: ⚙️
+   - Subscribers: All users
+   - Message Type: Text (system messages)
+
+3. weather/alerts
+   - Description: Weather updates and warnings
+   - Emoji: 🌤️
+   - Subscribers: All users
+   - Message Type: Text (weather info)
+
+Adding Custom Topics:
+- No admin approval needed
+- Just publish to new topic
+- All subscribers receive automatically
+
+
+JAVASCRIPT FUNCTIONS - DASHBOARD (app.js):
+===========================================
+
+checkUserSession()
+- Verifies user is logged in
+- Redirects to login if not authenticated
+- Returns: void
+
+displayUsername()
+- Shows username in navbar
+- Finds element with id="username-display"
+- Returns: void
+
+setupMQTT()
+- Initializes MQTT connection
+- Subscribes to all topics
+- Sets up message handlers
+- Returns: void
+
+renderNotifications(list)
+- Displays notifications as badges
+- Parameter: Array of notification objects
+- Sorts by most recent first
+- Returns: void
+
+getTopicEmoji(topic)
+- Returns emoji for topic
+- Parameter: Topic name (string)
+- Returns: Emoji string (🎓, ⚙️, 🌤️)
+
+Example:
+getTopicEmoji("school/announcements") → "🎓"
+
+escapeHtml(text)
+- Escapes HTML special characters
+- Prevents XSS attacks
+- Parameter: Text to escape (string)
+- Returns: Escaped text (string)
+
+filterTopic(topic)
+- Filters notifications by topic
+- Parameter: Topic name or "all"
+- Updates visual filter button
+- Returns: void
+
+Example:
+filterTopic("school/announcements")
+filterTopic("all")
+
+deleteNotification(index)
+- Removes notification from display
+- Shows confirmation dialog
+- Parameter: Array index (number)
+- Returns: void
+
+markAsRead(index)
+- Toggles read/unread status
+- Parameter: Array index (number)
+- Updates badge styling
+- Returns: void
+
+showBadgePopup(notification)
+- Creates toast notification popup
+- Auto-disappears after 5 seconds
+- Plays sound notification
+- Parameter: Notification object
+- Returns: void
+
+playNotificationSound()
+- Plays audio notification
+- Uses remote sound file
+- Catches errors silently
+- Volume: 0.5 (50%)
+- Returns: void
+
+logout()
+- Clears session
+- Closes MQTT connection
+- Redirects to login page
+- Returns: void
+
+
+JAVASCRIPT FUNCTIONS - ADMIN (admin.js):
+========================================
+
+checkUserSession()
+- Same as dashboard version
+- Verifies authentication
+- Redirects if not logged in
+- Returns: void
+
+displayUsername()
+- Shows username in navbar
+- Same as dashboard version
+- Returns: void
+
+setupMQTT()
+- Initializes MQTT for admin
+- Only subscribes to acknowledge
+- Handles publishing
+- Returns: void
+
+sendMessage()
+- Publishes alert to topic
+- Gets values from input fields
+- Shows success/error message
+- Clears form on success
+- Parameter: None (uses form values)
+- Returns: void
+
+logout()
+- Logs out user
+- Closes MQTT connection
+- Redirects to login
+- Shows confirmation dialog
+- Returns: void
+
+
+NOTIFICATION OBJECT STRUCTURE:
+==============================
+
+Standard notification object:
+{
+  id: 1234567890,           // Timestamp
+  topic: "school/announcements",
+  message: "Class cancelled tomorrow",
+  time: "14:30",            // HH:MM format
+  timestamp: Date object,
+  read: false               // Boolean
+}
+
+When stored in allMessages array:
+- Unread notifications have border highlight
+- Read notifications have normal styling
+- Index used for deletion/marking
+
+
+HTML ELEMENT IDS REQUIRED:
+==========================
+
+Dashboard (dashboard.html):
+- username-display: Display username
+- notifications: Container for badges
+- empty-state: Show when no notifications
+
+Admin (admin.html):
+- username-display: Display username
+- topic: Select element for topic choice
+- message: Textarea for message
+- adminMessage: Display status messages
+
+Login (login.html):
+- loginForm: Form element
+- username: Username input
+- password: Password input
+- loginMessage: Display messages
+
+Signup (signup.html):
+- signupForm: Form element
+- username: Username input
+- email: Email input
+- password: Password input
+- confirm_password: Confirm password input
+- signupMessage: Display messages
+
+
+LOCAL STORAGE KEYS:
+==================
+
+After successful login:
+localStorage.setItem('user_id', userId);
+localStorage.setItem('username', username);
+
+Retrieve during session:
+const userId = localStorage.getItem('user_id');
+const username = localStorage.getItem('username');
+
+Clear on logout:
+localStorage.removeItem('user_id');
+localStorage.removeItem('username');
+
+Check if logged in:
+if (!localStorage.getItem('user_id')) {
+  // Not logged in
+}
+
+
+CSS CLASSES - BADGE STYLING:
+============================
+
+.badge
+- Main notification card
+- Background with gradient
+- Border colored by status
+- Hover effect: lifts up
+
+.badge.unread
+- Variant for unread notifications
+- Yellow/amber border
+- Different background gradient
+
+.badge-header
+- Top section of badge
+- Contains topic and time
+- Flexbox layout
+
+.badge-topic
+- Topic label
+- Small uppercase text
+- Colored accent
+
+.badge-time
+- Timestamp display
+- Right-aligned
+- Gray color
+
+.badge-message
+- Main notification text
+- Large font
+- Bold weight
+
+.badge-actions
+- Bottom section buttons
+- Flex container
+- Two buttons: Read, Delete
+
+.badge-action-btn
+- Individual action button
+- Hover effect
+- Click handler
+
+.badge-delete
+- X button (top-right)
+- Circle button
+- Red color
+- Absolute positioned
+
+.notification-badges
+- Grid container
+- Auto-fill layout
+- Responsive columns
+
+
+ANIMATION CLASSES:
+==================
+
+@keyframes slideIn
+- Notification appearance
+- Duration: 0.5s
+- Moves up with fade
+
+@keyframes slideUp
+- Toast popup entrance
+- Duration: 0.5s
+- Slides from bottom
+
+@keyframes slideDown
+- Toast popup exit
+- Duration: 0.5s
+- Slides to bottom
+
+
+RESPONSE CODES:
+===============
+
+HTTP 200 - Success
+- Request processed successfully
+- Response body contains result
+
+HTTP 400 - Bad Request
+- Invalid input parameters
+- Missing required fields
+
+HTTP 405 - Method Not Allowed
+- Using wrong HTTP method (GET instead of POST)
+
+HTTP 500 - Server Error
+- PHP error occurred
+- Check error logs
+
+
+DATABASE COLUMNS USED:
+======================
+
+Users table:
+- id: Primary key
+- username: Login name
+- email: Unique email
+- password: Hashed password
+- created_at: Registration timestamp
+
+Notifications table:
+- id: Primary key
+- user_id: Foreign key to users
+- topic: MQTT topic
+- message: Alert content
+- is_read: Boolean flag
+- created_at: Alert timestamp
+
+Sessions table:
+- id: Primary key
+- user_id: Foreign key
+- session_token: Unique identifier
+- expires_at: Session expiration
+- created_at: Session creation time
+
+
+INTEGRATION POINTS:
+==================
+
+Frontend → Backend:
+- fetch() calls to PHP endpoints
+- JSON request/response format
+- LocalStorage for client-side session
+
+Backend → Database:
+- MySQLi prepared statements
+- Transaction support available
+- Foreign key relationships
+
+Frontend → MQTT:
+- WebSocket connection (mqtt.js library)
+- Publish/Subscribe pattern
+- JSON serializable messages
+
+Browser → Server:
+- HTTP requests to PHP files
+- Session cookies stored
+- HTTPS recommended for production
+
+
+RATE LIMITING (Not Implemented):
+============================
+
+Could add to prevent abuse:
+- Login attempts: max 5 per minute
+- API calls: throttle per user
+- MQTT publish: rate limit per topic
+
+Consider for production deployment.
+
+
+SECURITY FEATURES IMPLEMENTED:
+==============================
+
+✅ Password Hashing
+- Uses PASSWORD_DEFAULT (bcrypt)
+- Cannot be reversed
+- Checked with password_verify()
+
+✅ HTML Escaping
+- Prevents XSS attacks
+- Text escaped before display
+- Custom escapeHtml() function
+
+✅ SQL Injection Prevention
+- Uses mysqli real_escape_string()
+- Should use prepared statements (future)
+
+✅ Session Management
+- PHP sessions for backend
+- LocalStorage for frontend
+- Cleared on logout
+
+⚠️ For Production:
+- Use HTTPS/SSL
+- Add CORS headers
+- Implement rate limiting
+- Add input validation
+- Use prepared statements
+- Add CSRF tokens
+
+
+USAGE EXAMPLES:
+===============
+
+Example: Send notification from admin
+1. Admin goes to admin.html
+2. Selects topic "school/announcements"
+3. Types "School closed today"
+4. Clicks "Send Alert"
+5. JavaScript calls admin.js sendMessage()
+6. client.publish() sends to MQTT
+7. All connected users on dashboard receive
+8. Badge appears in dashboard.html
+
+Example: Create new user account
+1. User goes to signup.html
+2. Enters username, email, password
+3. JavaScript calls fetch() to register.php
+4. PHP validates and hashes password
+5. Inserts into MySQL users table
+6. Returns success
+7. User redirected to login.html
+8. User logs in
+9. Session created
+
+Example: View notifications
+1. User logs in
+2. Redirected to dashboard.html
+3. JavaScript runs setupMQTT()
+4. Connects to ws://localhost:9001
+5. Subscribes to all topics
+6. Waits for messages
+7. When message arrives, badge rendered
+8. Toast popup shown
+9. Sound plays

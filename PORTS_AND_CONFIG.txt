@@ -1,0 +1,265 @@
+🌐 PORT & SERVICE CONFIGURATION REFERENCE
+==========================================
+
+REQUIRED SERVICES & PORTS:
+===========================
+
+1. APACHE (Web Server)
+   Port: 80 (HTTP)
+   Port: 443 (HTTPS - optional)
+   Process: Apache.exe
+   Start: XAMPP Control Panel → Start button
+   Check: http://localhost/
+   
+2. MYSQL (Database Server)
+   Port: 3306
+   Process: mysqld.exe
+   Start: XAMPP Control Panel → Start button
+   Check: http://localhost/phpmyadmin
+
+3. MOSQUITTO (MQTT Message Broker)
+   Port: 1883 (MQTT Protocol)
+   Port: 9001 (WebSocket)
+   Process: mosquitto.exe
+   Start: cmd → cd "C:\Program Files\mosquitto" → mosquitto -v
+   Check: Should see "Opening websockets listen socket on port 9001"
+
+4. PHP (Server-side Language)
+   Included with XAMPP
+   Version: 7.4+ (depends on XAMPP version)
+   Extension: mysqli, json (needed)
+
+
+MOSQUITTO CONFIGURATION:
+==========================
+
+File: C:\Program Files\mosquitto\mosquitto.conf
+
+Required content:
+---
+listener 1883
+protocol mqtt
+
+listener 9001
+protocol websockets
+
+allow_anonymous true
+---
+
+This allows both MQTT clients and WebSocket connections.
+
+
+PORT VERIFICATION:
+===================
+
+Windows Command Prompt commands:
+
+Check if port 80 is in use:
+netstat -ano | findstr ":80"
+
+Check if port 3306 is in use:
+netstat -ano | findstr ":3306"
+
+Check if port 1883 is in use:
+netstat -ano | findstr ":1883"
+
+Check if port 9001 is in use:
+netstat -ano | findstr ":9001"
+
+Kill process using a port (use PID from above):
+taskkill /PID [PID_NUMBER] /F
+
+Example:
+taskkill /PID 4532 /F
+
+
+FIREWALL SETTINGS (if needed):
+==============================
+
+Windows Defender Firewall:
+1. Open Windows Defender Firewall → Advanced Settings
+2. Inbound Rules → New Rule
+3. Port → TCP/UDP
+4. Specific local ports: 80, 443, 3306, 1883, 9001
+5. Action: Allow the connection
+6. Apply to: Domain, Private, Public
+
+
+XAMPP FOLDER STRUCTURE:
+=======================
+
+C:\xampp\
+├── apache\          (Apache web server)
+├── mysql\           (MySQL database)
+├── php\             (PHP interpreter)
+├── htdocs\          ← Website files go here
+│   └── mqtt-alert-app\  ← YOUR PROJECT
+├── mysql-bin\
+├── tomcat\
+├── perl\
+└── control3.exe     (XAMPP Control Panel)
+
+Important: Put your notif folder in: C:\xampp\htdocs\mqtt-alert-app\
+
+
+COMMON PORT CONFLICTS:
+======================
+
+Port 80 in use?
+- Skype, IIS, or other web server
+- Solution: Use Apache on different port or stop conflicting service
+
+Port 3306 in use?
+- Another MySQL instance running
+- Solution: Stop other MySQL or use different port
+
+Port 1883/9001 in use?
+- Another MQTT broker running
+- Solution: Stop conflicting MQTT or use different ports
+
+Use alternative ports in XAMPP:
+Edit: C:\xampp\apache\conf\httpd.conf
+Change: Listen 80 → Listen 8080
+
+Edit: C:\xampp\mysql\bin\my.ini
+Change: port=3306 → port=3307
+
+
+ENVIRONMENT VARIABLES (Optional):
+================================
+
+Add to system PATH for command line access:
+
+XAMPP:
+C:\xampp\apache\bin
+C:\xampp\mysql\bin
+C:\xampp\php
+
+Mosquitto:
+C:\Program Files\mosquitto
+
+Then can use from anywhere:
+apache start
+mysql -u root
+mosquitto -v
+
+
+SERVICE STATUS CHECKS:
+======================
+
+Apache status:
+http://localhost/
+
+MySQL status:
+http://localhost/phpmyadmin
+or
+mysql -u root -p
+
+Mosquitto status:
+Check for "Opening websockets listen socket on port 9001" in terminal
+
+PHP version:
+http://localhost/info.php (create file with <?php phpinfo(); ?>)
+
+Your app:
+http://localhost/mqtt-alert-app/
+
+
+NETWORK CONFIGURATION:
+======================
+
+Local machine access:
+- http://localhost/mqtt-alert-app
+- http://127.0.0.1/mqtt-alert-app
+
+Network access (replace X with your IP):
+- http://192.168.X.X/mqtt-alert-app
+- Find your IP: In cmd, type: ipconfig
+
+Find your machine IP:
+ipconfig | findstr /I "IPv4"
+
+Remote access (Not recommended without HTTPS):
+- Set port forwarding on router
+- Use dynamic DNS service
+- Enable HTTPS for security
+
+
+MYSQL CONNECTION STRING:
+=======================
+
+Connection parameters:
+- Host: localhost
+- Port: 3306
+- User: root
+- Password: (empty)
+- Database: mqtt_alert_db
+
+PHP example:
+$conn = new mysqli('localhost', 'root', '', 'mqtt_alert_db');
+
+MQTT connection string:
+ws://localhost:9001
+
+JavaScript example:
+const client = mqtt.connect("ws://localhost:9001");
+
+
+PERFORMANCE OPTIMIZATION:
+=========================
+
+Increase memory limit (php.ini):
+memory_limit = 256M
+
+Increase max upload size (php.ini):
+upload_max_filesize = 100M
+post_max_size = 100M
+
+Optimize MySQL (my.ini):
+max_connections = 100
+query_cache_size = 16M
+
+
+DOCKER ALTERNATIVE (Advanced):
+==============================
+
+If having port conflicts, consider Docker:
+- Run services in containers
+- No port conflicts with local system
+- Isolated environment
+- Easier deployment
+
+Would require separate Docker configuration.
+
+
+TROUBLESHOOTING CHECKLIST:
+==========================
+
+If services won't start:
+☐ Check ports not in use (netstat commands above)
+☐ Check Windows Firewall settings
+☐ Run XAMPP as Administrator
+☐ Check XAMPP logs for errors
+☐ Try restarting computer
+☐ Uninstall conflicting software
+
+If connection fails:
+☐ Verify all three services running
+☐ Check correct ports (80, 3306, 1883, 9001)
+☐ Check firewall allows connections
+☐ Verify config files correct
+☐ Check file permissions
+
+If database not responding:
+☐ MySQL service running in XAMPP?
+☐ Try: http://localhost/phpmyadmin
+☐ Check MySQL error log
+☐ Restart MySQL service
+☐ Check disk space
+
+If MQTT not working:
+☐ Mosquitto terminal running?
+☐ See "port 9001" message?
+☐ Check mosquitto.conf configured
+☐ Firewall blocks port 9001?
+☐ Try restart Mosquitto service
