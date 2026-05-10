@@ -36,6 +36,20 @@
                 placeholder="Confirm Password" 
                 required
             >
+            <input 
+                type="date" 
+                id="birth_date" 
+                placeholder="Birth Date" 
+                required
+            >
+            <input 
+                type="number" 
+                id="age" 
+                placeholder="Age" 
+                min="1" 
+                max="120" 
+                required
+            >
             <button type="submit" class="auth-btn">Sign Up</button>
         </form>
         
@@ -56,6 +70,8 @@ document.getElementById('signupForm').addEventListener('submit', async (e) => {
     const email = document.getElementById('email').value;
     const password = document.getElementById('password').value;
     const confirm_password = document.getElementById('confirm_password').value;
+    const birth_date = document.getElementById('birth_date').value;
+    const age = document.getElementById('age').value;
     const messageDiv = document.getElementById('signupMessage');
     
     try {
@@ -64,7 +80,7 @@ document.getElementById('signupForm').addEventListener('submit', async (e) => {
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ username, email, password, confirm_password })
+            body: JSON.stringify({ username, email, password, confirm_password, birth_date, age })
         });
         
         const data = await response.json();

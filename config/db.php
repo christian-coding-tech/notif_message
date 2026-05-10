@@ -5,6 +5,19 @@ define('DB_USER', 'root');
 define('DB_PASS', '');
 define('DB_NAME', 'mqtt_alert_db');
 
+// Session Configuration
+ini_set('session.cookie_httponly', 1);
+ini_set('session.cookie_secure', 0); // Set to 1 if using HTTPS
+ini_set('session.cookie_samesite', 'Lax');
+session_set_cookie_params([
+    'lifetime' => 0,
+    'path' => '/',
+    'domain' => '',
+    'secure' => false, // Set to true if using HTTPS
+    'httponly' => true,
+    'samesite' => 'Lax'
+]);
+
 // Create connection
 $conn = new mysqli(DB_HOST, DB_USER, DB_PASS);
 

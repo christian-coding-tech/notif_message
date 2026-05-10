@@ -4,29 +4,73 @@ include '../config/db.php';
 session_start();
 
 if (!isset($_SESSION['user_id'])) {
+    error_log("No user_id in session. Session data: " . print_r($_SESSION, true));
     http_response_code(401);
     echo json_encode(['success' => false, 'message' => 'Unauthorized']);
     exit;
 }
 
 $user_id = $_SESSION['user_id'];
+error_log("User ID from session: $user_id");
 $action = $_GET['action'] ?? '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET' && $action === 'get_user_notifications') {
-    $sql = "SELECT n.id AS notification_id, a.id AS alert_id, a.topic, a.message, a.alert_type, a.status, COALESCE(n.is_read, 0) AS is_read, n.read_at, a.created_at " .
-           "FROM alerts a LEFT JOIN notifications n ON a.id = n.alert_id AND n.user_id = $user_id " .
-           "WHERE a.status = 'active' " .
-           "UNION ALL " .
-           "SELECT n.id AS notification_id, n.alert_id, n.topic, n.message, '' AS alert_type, 'active' AS status, n.is_read, n.read_at, n.created_at " .
-           "FROM notifications n WHERE n.user_id = $user_id AND (n.alert_id IS NULL OR n.alert_id = 0) " .
-           "ORDER BY created_at DESC";
+    error_log("Getting notifications for user_id: $user_id");
 
-    $result = $conn->query($sql);
-    $notifications = [];
-    while ($row = $result->fetch_assoc()) {
-        $notifications[] = $row;
+    // Get alerts that are shared with all users
+    $sql_alerts = "SELECT a.id AS notification_id, a.id AS alert_id, a.topic, a.message, a.alert_type, 
+                          a.status, 0 AS is_read, NULL AS read_at, a.created_at 
+                   FROM alerts a 
+                   WHERE a.status = 'active' 
+                   ORDER BY a.created_at DESC 
+                   LIMIT 100";
+
+    // Get user-specific notifications
+    $sql_user_notif = "SELECT n.id AS notification_id, n.alert_id, n.topic, n.message, 
+                              '' AS alert_type, 'active' AS status, n.is_read, n.read_at, n.created_at 
+                       FROM notifications n 
+                       WHERE n.user_id = ? 
+                       ORDER BY n.created_at DESC 
+                       LIMIT 100";
+
+    error_log("Fetching alerts and user notifications");
+
+    $all_notifications = [];
+
+    // Get alerts
+    $result_alerts = $conn->query($sql_alerts);
+    if ($result_alerts) {
+        while ($row = $result_alerts->fetch_assoc()) {
+            $all_notifications[] = $row;
+        }
+    } else {
+        error_log("SQL Error fetching alerts: " . $conn->error);
     }
-    echo json_encode(['success' => true, 'notifications' => $notifications]);
+
+    // Get user notifications using prepared statement
+    $stmt = $conn->prepare($sql_user_notif);
+    if ($stmt) {
+        $stmt->bind_param("i", $user_id);
+        if ($stmt->execute()) {
+            $result_user = $stmt->get_result();
+            while ($row = $result_user->fetch_assoc()) {
+                $all_notifications[] = $row;
+            }
+            $stmt->close();
+        } else {
+            error_log("Prepared statement execution error: " . $stmt->error);
+        }
+    } else {
+        error_log("Prepared statement creation error: " . $conn->error);
+    }
+
+    // Sort by created_at DESC and remove duplicates
+    usort($all_notifications, function($a, $b) {
+        return strtotime($b['created_at']) - strtotime($a['created_at']);
+    });
+
+    error_log("Found " . count($all_notifications) . " total notifications");
+    echo json_encode(['success' => true, 'notifications' => array_slice($all_notifications, 0, 50)]);
     exit;
 }
 

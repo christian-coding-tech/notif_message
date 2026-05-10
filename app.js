@@ -4,17 +4,59 @@ const client = mqtt.connect("ws://localhost:9001");
 let allNotifications = [];
 let currentUser = {};
 let currentFilter = 'all';
+let refreshInterval = null;
 
 // Check if user is logged in
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     initTheme();
-    checkUserSession();
+    const isAuthenticated = await checkUserSession();
+    if (!isAuthenticated) return;
+
     setupMQTT();
     displayUsername();
     loadNotifications();
     loadUserProfile();
     setupProfileSettings();
+    
+    // Auto-refresh notifications from database every 30 seconds
+    if (refreshInterval) clearInterval(refreshInterval);
+    refreshInterval = setInterval(() => {
+        console.log('⏰ Auto-refreshing notifications...');
+        loadNotifications();
+    }, 30000);
 });
+
+async function checkUserSession() {
+    try {
+        const response = await fetch('backend/check_session.php', {
+            credentials: 'same-origin'
+        });
+
+        if (!response.ok) {
+            window.location.href = 'login.html';
+            return false;
+        }
+
+        const data = await response.json();
+        if (!data.logged_in) {
+            window.location.href = 'login.html';
+            return false;
+        }
+
+        currentUser = {
+            id: data.user_id,
+            username: data.username
+        };
+
+        localStorage.setItem('user_id', data.user_id);
+        localStorage.setItem('username', data.username);
+        return true;
+    } catch (error) {
+        console.error('Session check failed:', error);
+        window.location.href = 'login.html';
+        return false;
+    }
+}
 
 function initTheme() {
     const savedTheme = localStorage.getItem('theme') || 'dark';
@@ -36,36 +78,34 @@ function applyTheme(theme) {
     }
 }
 
-function checkUserSession() {
-    const userId = localStorage.getItem('user_id');
-    const username = localStorage.getItem('username');
-    
-    if (!userId || !username) {
-        window.location.href = 'login.html';
-        return;
-    }
-    
-    currentUser = {
-        id: userId,
-        username: username
-    };
-}
-
 function displayUsername() {
     const usernameDisplay = document.getElementById('username-display');
+    const sidebarUsername = document.getElementById('sidebar-username');
     const profileAvatar = document.getElementById('profileAvatar');
 
     if (usernameDisplay) {
         usernameDisplay.textContent = `👤 ${currentUser.username}`;
     }
 
+    if (sidebarUsername) {
+        sidebarUsername.textContent = currentUser.username;
+    }
+
     if (profileAvatar) {
         if (currentUser.avatar && currentUser.avatar.trim()) {
             profileAvatar.src = currentUser.avatar;
         } else {
-            profileAvatar.src = 'https://via.placeholder.com/38/2d3748/ffffff?text=' + (currentUser.username ? currentUser.username.charAt(0).toUpperCase() : 'U');
+            profileAvatar.src = getLetterAvatar(currentUser.username);
         }
     }
+}
+
+function getLetterAvatar(username) {
+    const letter = username && username.trim().length > 0 ? username.trim().charAt(0).toUpperCase() : 'U';
+    const bg = '#2563eb';
+    const fg = '#ffffff';
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80"><rect width="100%" height="100%" rx="40" ry="40" fill="${bg}"/><text x="50%" y="50%" dy="0.1em" text-anchor="middle" dominant-baseline="middle" font-family="Segoe UI, sans-serif" font-size="36" font-weight="700" fill="${fg}">${letter}</text></svg>`;
+    return 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg);
 }
 
 function toggleSidebar() {
@@ -154,7 +194,7 @@ function loadUserProfile() {
                     if (data.user.avatar && data.user.avatar.trim()) {
                         profilePreview.src = data.user.avatar;
                     } else {
-                        profilePreview.src = 'https://via.placeholder.com/80/2d3748/ffffff?text=' + (data.user.username ? data.user.username.charAt(0).toUpperCase() : 'U');
+                        profilePreview.src = getLetterAvatar(data.user.username);
                     }
                 }
             }
@@ -259,17 +299,40 @@ function setupMQTT() {
 }
 
 function loadNotifications() {
+    const container = document.getElementById('notifications');
+    const emptyState = document.getElementById('empty-state');
+    const loadingState = document.getElementById('loading-state');
+
+    // Reset UI state
+    if (container) container.innerHTML = '';
+    if (emptyState) emptyState.classList.add('hidden');
+    if (loadingState) loadingState.classList.remove('hidden');
+
+    console.log('🔄 Loading notifications from database...');
+
     fetch('backend/notification_api.php?action=get_user_notifications', {
-        credentials: 'same-origin'
+        method: 'GET',
+        credentials: 'same-origin',
+        headers: {
+            'Accept': 'application/json'
+        }
     })
-        .then(response => response.json())
+        .then(response => {
+            console.log('📨 Response status:', response.status);
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            return response.json();
+        })
         .then(data => {
-            if (data.success) {
+            console.log('📦 Received data:', data);
+            
+            if (data.success && Array.isArray(data.notifications)) {
                 allNotifications = data.notifications.map(n => ({
                     id: n.notification_id || Date.now(),
                     alert_id: n.alert_id || 0,
-                    topic: n.topic,
-                    message: n.message,
+                    topic: n.topic || 'General',
+                    message: n.message || '(No message)',
                     time: new Date(n.created_at).toLocaleTimeString([], {
                         hour: '2-digit',
                         minute: '2-digit'
@@ -279,15 +342,18 @@ function loadNotifications() {
                     notification_id: n.notification_id,
                     read_at: n.read_at
                 }));
-                renderNotifications();
+                console.log(`✅ Loaded ${allNotifications.length} notifications from database`);
             } else {
-                console.error('Failed to load notifications:', data.message || 'Unknown error');
+                console.warn('⚠️ Failed to load notifications:', data.message || 'Invalid response');
                 allNotifications = [];
-                renderNotifications();
             }
+
+            if (loadingState) loadingState.classList.add('hidden');
+            renderNotifications();
         })
         .catch(error => {
-            console.error('Error loading notifications:', error);
+            console.error('❌ Error loading notifications:', error);
+            if (loadingState) loadingState.classList.add('hidden');
             allNotifications = [];
             renderNotifications();
         });
@@ -320,19 +386,28 @@ function saveNotification(notification) {
 function renderNotifications() {
     const container = document.getElementById('notifications');
     const emptyState = document.getElementById('empty-state');
+    const loadingState = document.getElementById('loading-state');
 
     let filteredNotifications = allNotifications;
     if (currentFilter !== 'all') {
         filteredNotifications = allNotifications.filter(n => n.topic === currentFilter);
     }
 
+    if (loadingState) {
+        loadingState.classList.add('hidden');
+    }
+
     if (filteredNotifications.length === 0) {
         container.innerHTML = '';
-        emptyState.style.display = 'block';
+        if (emptyState) {
+            emptyState.classList.remove('hidden');
+        }
         return;
     }
 
-    emptyState.style.display = 'none';
+    if (emptyState) {
+        emptyState.classList.add('hidden');
+    }
     container.innerHTML = filteredNotifications.map((notif) => {
         const actualIndex = allNotifications.indexOf(notif);
         return `
@@ -419,11 +494,6 @@ function toggleRead(index) {
     });
 }
 
-    .catch(error => {
-        console.error('Error updating read status:', error);
-    });
-}
-
 function showBadgePopup(notification) {
     const popup = document.createElement('div');
     popup.className = 'popup-toast';
@@ -467,12 +537,20 @@ function playNotificationSound() {
 }
 
 function logout() {
-    if (confirm('Are you sure you want to logout?')) {
+    if (!confirm('Are you sure you want to logout?')) return;
+
+    if (refreshInterval) clearInterval(refreshInterval);
+    
+    fetch('backend/logout.php', {
+        method: 'POST',
+        credentials: 'same-origin'
+    }).finally(() => {
         localStorage.removeItem('user_id');
         localStorage.removeItem('username');
+        localStorage.removeItem('role');
         client.end();
         window.location.href = 'login.html';
-    }
+    });
 }
 
 const style = document.createElement('style');

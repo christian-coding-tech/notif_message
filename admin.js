@@ -113,6 +113,8 @@ function showSection(sectionId) {
             loadDashboard();
         } else if (sectionId === 'manage-alerts') {
             loadAlerts('all');
+        } else if (sectionId === 'manage-users') {
+            loadUsers();
         }
     }
     

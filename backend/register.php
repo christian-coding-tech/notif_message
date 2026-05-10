@@ -9,6 +9,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $email = $conn->real_escape_string($data['email']);
     $password = $data['password'];
     $confirm_password = $data['confirm_password'];
+    $birth_date = $conn->real_escape_string($data['birth_date']);
+    $age = (int)$data['age'];
     
     // Validation
     if (strlen($username) < 3) {
@@ -42,7 +44,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $hashed_password = password_hash($password, PASSWORD_DEFAULT);
     
     // Insert user
-    $sql = "INSERT INTO users (username, email, password) VALUES ('$username', '$email', '$hashed_password')";
+    $sql = "INSERT INTO users (username, email, password, birth_date, age) VALUES ('$username', '$email', '$hashed_password', '$birth_date', $age)";
     
     if ($conn->query($sql) === TRUE) {
         echo json_encode(['success' => true, 'message' => 'Registration successful']);
