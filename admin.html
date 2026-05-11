@@ -14,10 +14,13 @@
     <div class="sidebar-header">
         <h2>🎯 Admin Hub</h2>
         <div class="sidebar-actions">
-            <button class="sidebar-toggle" onclick="toggleSidebar()"><i class="fas fa-chevron-left"></i></button>
-            <button class="sidebar-close" onclick="toggleSidebar()">
-                <i class="fas fa-times"></i>
+            <button class="sidebar-toggle" onclick="toggleSidebar()" title="Toggle sidebar">
+                <i class="fas fa-chevron-left" aria-hidden="true"></i>
             </button>
+            <button class="sidebar-close" onclick="toggleSidebar()" title="Close sidebar">
+                <i class="fas fa-times" aria-hidden="true"></i>
+            </button>
+
         </div>
     </div>
 
@@ -34,6 +37,12 @@
         <a href="#manage-users" class="nav-item" onclick="showSection('manage-users')">
             <i class="fas fa-users"></i><span>Manage Users</span>
         </a>
+        <a href="#add-user" class="nav-item" onclick="showSection('add-user')">
+            <i class="fas fa-user-plus" aria-hidden="true"></i><span>Add User</span>
+        </a>
+
+
+
     </nav>
 
     <div class="sidebar-footer">
@@ -51,15 +60,17 @@
 <div class="navbar">
     <div class="navbar-content">
         <div class="navbar-left">
-            <button class="menu-toggle" onclick="toggleSidebar()">
-                <i class="fas fa-bars"></i>
+            <button class="menu-toggle" onclick="toggleSidebar()" title="Open sidebar">
+                <i class="fas fa-bars" aria-hidden="true"></i>
             </button>
+
             <h1>📢 Admin Control Panel</h1>
         </div>
         <div class="navbar-right">
             <button id="themeToggle" type="button" class="theme-btn" onclick="toggleTheme()">☀️ Light</button>
             <span id="username-display" class="username-badge"></span>
-            <button onclick="logout()" class="logout-btn">Logout</button>
+            <button onclick="logout()" class="logout-btn" title="Logout">Logout</button>
+
         </div>
     </div>
 </div>
@@ -198,7 +209,68 @@
         </div>
     </div>
 
+    <!-- ADD USER SECTION -->
+    <div id="add-user" class="admin-section">
+        <div class="section-header">
+            <h2>➕ Add User</h2>
+            <p>Create a new account and view users</p>
+        </div>
+
+        <div class="form-container">
+            <div class="form-group">
+                <label for="new-username">Username</label>
+                <input type="text" id="new-username" class="form-control" required>
+            </div>
+
+            <div class="form-group">
+                <label for="new-email">Email</label>
+                <input type="email" id="new-email" class="form-control" required>
+            </div>
+
+            <div class="form-group">
+                <label for="new-password">Password (min 6 chars)</label>
+                <input type="password" id="new-password" class="form-control" required>
+            </div>
+
+            <div class="form-group">
+                <label for="new-confirm_password">Confirm Password</label>
+                <input type="password" id="new-confirm_password" class="form-control" required>
+            </div>
+
+            <div class="form-group">
+                <label for="new-birth_date">Birth Date</label>
+                <input type="date" id="new-birth_date" class="form-control" required>
+            </div>
+
+            <div class="form-group">
+                <label for="new-age">Age</label>
+                <input type="number" id="new-age" class="form-control" min="1" max="120" required>
+            </div>
+
+            <div class="form-actions">
+                <button type="button" class="btn btn-primary" onclick="createUser()">
+                    <i class="fas fa-user-plus"></i> Create User
+                </button>
+                <button type="button" class="btn btn-secondary" onclick="clearAddUserForm()">
+                    <i class="fas fa-eraser"></i> Clear
+                </button>
+            </div>
+
+            <div id="addUserMessage" class="message-box"></div>
+        </div>
+
+        <div style="margin-top: 25px;" class="section-header">
+            <h2 style="font-size: 20px; margin-bottom: 8px;">👥 Users</h2>
+            <p>All registered users with birth date and age</p>
+        </div>
+
+        <div id="add-user-list" class="alerts-table-container">
+            <p class="loading-text">Loading users...</p>
+        </div>
+    </div>
+
 </div>
+
 
 <!-- OVERLAY FOR SIDEBAR -->
 <div class="sidebar-overlay" onclick="toggleSidebar()"></div>

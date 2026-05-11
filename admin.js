@@ -442,7 +442,150 @@ function setupMessageListener() {
     });
 }
 
+// ===== USERS (Manage/Add) =====
+function escapeHtml(text) {
+    if (text === null || text === undefined) return '';
+    return String(text).replace(/[&<>"']/g, (m) => {
+        const map = {
+            '&': '&amp;',
+            '<': '<',
+            '>': '>',
+            '"': '"',
+            "'": '&#039;'
+        };
+        return map[m] || m;
+    });
+}
+
+function loadUsers() {
+    const container = document.getElementById('add-user-list') || document.getElementById('users-list');
+    if (!container) return;
+
+    container.innerHTML = '<p class="loading-text">Loading users...</p>';
+
+    fetch('backend/get_users.php', {
+        method: 'GET'
+    })
+        .then(response => response.json())
+        .then(data => {
+            if (!data.success) {
+                container.innerHTML = '<p class="no-data">' + escapeHtml(data.message || 'Unable to load users') + '</p>';
+                return;
+            }
+            displayUsers(data.users || []);
+        })
+        .catch(() => {
+            container.innerHTML = '<p class="no-data">Error loading users</p>';
+        });
+}
+
+function displayUsers(users) {
+    const container = document.getElementById('add-user-list') || document.getElementById('users-list');
+    if (!container) return;
+
+    if (!users || users.length === 0) {
+        container.innerHTML = '<p class="no-data">No users found</p>';
+        return;
+    }
+
+    // Normalize optional fields
+    users.forEach(u => {
+        if (u.birth_date === null || u.birth_date === undefined) u.birth_date = '';
+        if (u.age === null || u.age === undefined) u.age = '';
+        if (u.role === null || u.role === undefined) u.role = '';
+    });
+
+
+    let html = '<table class="alerts-table"><thead><tr>';
+    html += '<th>ID</th><th>Username</th><th>Email</th><th>Birth Date</th><th>Age</th><th>Role</th><th>Created At</th>';
+    html += '</tr></thead><tbody>';
+
+    users.forEach(u => {
+        const created = u.created_at ? new Date(u.created_at).toLocaleDateString() : '';
+        html += `<tr>
+            <td>${escapeHtml(u.id)}</td>
+            <td><strong>${escapeHtml(u.username)}</strong></td>
+            <td>${escapeHtml(u.email)}</td>
+            <td>${escapeHtml(u.birth_date)}</td>
+            <td>${escapeHtml(u.age)}</td>
+            <td>${escapeHtml(u.role)}</td>
+            <td>${escapeHtml(created)}</td>
+        </tr>`;
+    });
+
+    html += '</tbody></table>';
+    container.innerHTML = html;
+}
+
+function createUser() {
+    const msg = document.getElementById('addUserMessage');
+    const setMsg = (text, type) => {
+        if (!msg) return;
+        msg.textContent = text;
+        msg.className = `message-box ${type}`;
+        if (type === 'success' || type === 'error') {
+            setTimeout(() => {
+                msg.textContent = '';
+                msg.className = 'message-box';
+            }, 3000);
+        }
+    };
+
+    const username = document.getElementById('new-username')?.value || '';
+    const email = document.getElementById('new-email')?.value || '';
+    const password = document.getElementById('new-password')?.value || '';
+    const confirm_password = document.getElementById('new-confirm_password')?.value || '';
+    const birth_date = document.getElementById('new-birth_date')?.value || '';
+    const age = document.getElementById('new-age')?.value || '';
+
+    if (!username || !email || !password || !confirm_password || !birth_date || !age) {
+        setMsg('Please fill all fields', 'error');
+        return;
+    }
+
+    setMsg('Creating user...', 'loading');
+
+    fetch('backend/register.php', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ username, email, password, confirm_password, birth_date, age })
+    })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                setMsg('✅ User created!', 'success');
+                clearAddUserForm();
+                // Refresh both user views
+                loadUsers();
+                // Also refresh manage-users if user switches tabs
+                return;
+            }
+
+            setMsg('❌ ' + (data.message || 'Unable to create user'), 'error');
+        })
+        .catch(() => {
+            setMsg('❌ Connection error', 'error');
+        });
+}
+
+function clearAddUserForm() {
+    const ids = ['new-username', 'new-email', 'new-password', 'new-confirm_password', 'new-birth_date', 'new-age'];
+    ids.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = '';
+    });
+
+    const msg = document.getElementById('addUserMessage');
+    if (msg) {
+        msg.textContent = '';
+        msg.className = 'message-box';
+    }
+}
+
 function showMessage(text, type, container) {
+
     container.textContent = text;
     container.className = `message-box ${type}`;
     

@@ -291,6 +291,43 @@ body {
     border: none;
 }
 
+/* Improve readability in dark mode for settings modal */
+html[data-theme='dark'] .profile-settings {
+    color: var(--text);
+}
+
+html[data-theme='dark'] .profile-settings label,
+html[data-theme='dark'] .profile-settings .form-group label {
+    color: var(--text) !important;
+    font-weight: 700;
+}
+
+html[data-theme='dark'] .profile-settings small,
+html[data-theme='dark'] .profile-settings .form-group small {
+    color: var(--text-muted) !important;
+}
+
+html[data-theme='dark'] .profile-settings .form-control,
+html[data-theme='dark'] .profile-settings input,
+html[data-theme='dark'] .profile-settings select,
+html[data-theme='dark'] .profile-settings textarea {
+    background: rgba(2, 6, 23, 0.35) !important;
+    border-color: rgba(148, 163, 184, 0.35) !important;
+    color: var(--text) !important;
+}
+
+html[data-theme='dark'] .profile-settings input::placeholder,
+html[data-theme='dark'] .profile-settings textarea::placeholder {
+    color: rgba(148, 163, 184, 0.85) !important;
+}
+
+html[data-theme='dark'] .profile-settings .message-box {
+    color: var(--text) !important;
+    background: rgba(15, 23, 42, 0.55);
+    border: 1px solid rgba(148, 163, 184, 0.25);
+}
+
+
 .avatar-upload {
     display: flex;
     align-items: center;
