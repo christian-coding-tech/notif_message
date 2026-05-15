@@ -859,12 +859,42 @@ html[data-theme='dark'] .profile-settings .message-box {
     padding: 30px;
     min-height: calc(100vh - 70px);
     transition: margin-left 0.3s ease;
+    /* Ensure main content paints above background layers */
+    position: relative;
+    z-index: 1;
 }
 
 .admin-container.sidebar-collapsed,
 .dashboard-container.sidebar-collapsed {
+    /* sidebar collapsed is narrower (80px) */
     margin-left: 80px;
 }
+
+/* Smoothly animate main content width when sidebar collapses */
+.admin-container,
+.dashboard-container {
+    /* guard against any overlap during transition */
+    width: calc(100% - 280px);
+}
+
+.admin-container.sidebar-collapsed,
+.dashboard-container.sidebar-collapsed {
+    width: calc(100% - 80px);
+}
+
+
+/* Make overlay stay above everything except the sidebar itself */
+.sidebar-overlay {
+    z-index: 150;
+}
+
+/* Desktop: keep sidebar visible and avoid any accidental slide/overlap */
+@media (min-width: 769px) {
+    .sidebar {
+        transform: translateX(0);
+    }
+}
+
 
 .admin-section {
     display: none;
@@ -1304,6 +1334,7 @@ html[data-theme='dark'] .profile-settings .message-box {
 
 /* ===== RESPONSIVE ===== */
 @media (max-width: 768px) {
+
     .navbar-content {
         flex-direction: row;
         gap: 10px;

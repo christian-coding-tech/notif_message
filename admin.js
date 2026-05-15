@@ -94,41 +94,45 @@ function showSection(sectionId) {
     document.querySelectorAll('.admin-section').forEach(section => {
         section.classList.remove('active');
     });
-    
+
     // Remove active class from nav items
     document.querySelectorAll('.nav-item').forEach(item => {
         item.classList.remove('active');
     });
-    
+
     // Show selected section
     const section = document.getElementById(sectionId);
     if (section) {
         section.classList.add('active');
-        
-        // Add active class to corresponding nav item
-        document.querySelector(`a[href="#${sectionId}"]`).classList.add('active');
-        
+
+        // Add active class to corresponding nav item (guard if selector not found)
+        const navLink = document.querySelector(`a[href="#${sectionId}"]`);
+        if (navLink) navLink.classList.add('active');
+
         // Load section-specific data
         if (sectionId === 'dashboard') {
             loadDashboard();
         } else if (sectionId === 'manage-alerts') {
             loadAlerts('all');
-        } else if (sectionId === 'manage-users') {
+        } else if (sectionId === 'manage-users' || sectionId === 'add-user') {
             loadUsers();
         }
     }
-    
+
     // Close sidebar on mobile
     if (window.innerWidth <= 768) {
         toggleSidebar();
     }
 }
 
+
 // ===== SIDEBAR TOGGLE =====
 function toggleSidebar() {
     const sidebar = document.getElementById('sidebar');
     const overlay = document.querySelector('.sidebar-overlay');
     const adminContainer = document.querySelector('.admin-container');
+
+    if (!sidebar || !overlay || !adminContainer) return;
 
     if (window.innerWidth <= 768) {
         sidebar.classList.toggle('show');
@@ -138,6 +142,7 @@ function toggleSidebar() {
         adminContainer.classList.toggle('sidebar-collapsed');
     }
 }
+
 
 // ===== DASHBOARD =====
 function loadDashboard() {
@@ -530,6 +535,10 @@ function createUser() {
             }, 3000);
         }
     };
+
+    // Ensure Users tabs always show live list (no refresh needed)
+    // (Also helps when switching tabs after creating a user)
+
 
     const username = document.getElementById('new-username')?.value || '';
     const email = document.getElementById('new-email')?.value || '';
